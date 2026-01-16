@@ -1,7 +1,9 @@
+// src/middleware.js
+
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
-
-export async function proxy(req) {
+export async function proxy(req) {   // ← new name required
+  // ... keep ALL your existing code exactly the same
   const { pathname } = req.nextUrl;
   const isProduction = process.env.NODE_ENV === "production";
 
@@ -39,8 +41,3 @@ export async function proxy(req) {
 
   return NextResponse.next();
 }
-
-// Config for which routes to apply the proxy to
-export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
-};
