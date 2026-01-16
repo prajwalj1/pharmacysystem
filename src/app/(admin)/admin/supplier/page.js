@@ -1,34 +1,57 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FiTruck, FiPlus, FiPhone, FiMail } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiTruck } from "react-icons/fi";
 
-export default function SuppliersPage() {
+export default function SupplierPage() {
   const [suppliers, setSuppliers] = useState([]);
+  const [errors, setErrors] = useState({});
   const [form, setForm] = useState({
     name: "",
-    contactPerson: "",
+    company: "",
     phone: "",
     email: "",
-    address: "",
+    license: "",
   });
 
-  // FETCH SUPPLIERS
-  const fetchSuppliers = async () => {
-    const res = await fetch("/api/admin/suppliers");
-    const data = await res.json();
-    setSuppliers(data);
-  };
+  // Fetch suppliers
+  useEffect(() => {
+    async function fetchSuppliers() {
+      const res = await fetch("/api/suppliers");
+      const data = await res.json();
+      setSuppliers(data);
+    }
+    fetchSuppliers();
+  }, []);
 
-//   useEffect(() => {
-//     fetchSuppliers();
-//   }, []);
+  // Validation
+  function validateForm() {
+    let newErrors = {};
 
-  // ADD SUPPLIER
-  const handleSubmit = async (e) => {
+    if (!form.name.trim()) {
+      newErrors.name = "Supplier name is required";
+    }
+
+    if (!form.company.trim()) {
+      newErrors.company = "Company name is required";
+    }
+
+    if (!form.phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^\d{10}$/.test(form.phone)) {
+      newErrors.phone = "Phone number must be 10 digits";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }
+
+  // Add supplier
+  async function handleSubmit(e) {
     e.preventDefault();
+    if (!validateForm()) return;
 
-    await fetch("/api/admin/suppliers", {
+    await fetch("/api/suppliers", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
@@ -36,110 +59,134 @@ export default function SuppliersPage() {
 
     setForm({
       name: "",
-      contactPerson: "",
+      company: "",
       phone: "",
       email: "",
-      address: "",
+      license: "",
     });
+    setErrors({});
 
-    fetchSuppliers();
-  };
+    const res = await fetch("/api/suppliers");
+    setSuppliers(await res.json());
+  }
+
+  // Delete supplier
+  async function deleteSupplier(id) {
+    await fetch(`/api/suppliers/${id}`, { method: "DELETE" });
+    const res = await fetch("/api/suppliers");
+    setSuppliers(await res.json());
+  }
 
   return (
-    <div className="space-y-8">
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold text-indigo-700 flex items-center gap-2">
-          <FiTruck /> Suppliers
+    <div className="p-6 space-y-8">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="bg-emerald-100 p-3 rounded-xl text-emerald-600">
+          <FiTruck size={26} />
+        </div>
+        <h1 className="text-2xl font-bold text-gray-800">
+          Supplier Management
         </h1>
       </div>
 
-      {/* ADD SUPPLIER CARD */}
-      <div className="bg-white rounded-2xl shadow p-6">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <FiPlus /> Add Supplier
-        </h2>
-
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4"
-        >
+      {/* Add Supplier */}
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white rounded-2xl shadow p-6 grid grid-cols-1 md:grid-cols-3 gap-4"
+      >
+        <div>
           <input
-            placeholder="Supplier Name"
-            className="input"
+            placeholder="Supplier Name *"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            required
-          />
-          <input
-            placeholder="Contact Person"
             className="input"
-            value={form.contactPerson}
-            onChange={(e) =>
-              setForm({ ...form, contactPerson: e.target.value })
-            }
-            required
           />
+          {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
+        </div>
+
+        <div>
           <input
-            placeholder="Phone"
+            placeholder="Company Name *"
+            value={form.company}
+            onChange={(e) => setForm({ ...form, company: e.target.value })}
             className="input"
+          />
+          {errors.company && (
+            <p className="text-red-500 text-sm">{errors.company}</p>
+          )}
+        </div>
+
+        <div>
+          <input
+            placeholder="Phone Number *"
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            required
-          />
-          <input
-            placeholder="Email"
             className="input"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
-          <textarea
-            placeholder="Address"
-            className="input md:col-span-2"
-            value={form.address}
-            onChange={(e) => setForm({ ...form, address: e.target.value })}
-          />
+          {errors.phone && (
+            <p className="text-red-500 text-sm">{errors.phone}</p>
+          )}
+        </div>
 
-          <button className="md:col-span-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl font-semibold transition">
-            Save Supplier
-          </button>
-        </form>
-      </div>
+        <input
+          placeholder="Email (optional)"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          className="input"
+        />
 
-      {/* SUPPLIERS LIST */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {suppliers.map((s) => (
-          <div
-            key={s._id}
-            className="bg-gradient-to-br from-indigo-50 to-white rounded-2xl shadow hover:shadow-lg transition p-6"
-          >
-            <h3 className="text-lg font-bold text-indigo-700">
-              {s.name}
-            </h3>
-            <p className="text-gray-600">{s.contactPerson}</p>
+        <input
+          placeholder="License Number (optional)"
+          value={form.license}
+          onChange={(e) => setForm({ ...form, license: e.target.value })}
+          className="input"
+        />
 
-            <div className="mt-3 space-y-2 text-sm text-gray-700">
-              <p className="flex items-center gap-2">
-                <FiPhone /> {s.phone}
-              </p>
-              {s.email && (
-                <p className="flex items-center gap-2">
-                  <FiMail /> {s.email}
-                </p>
-              )}
-            </div>
+        <button className="md:col-span-3 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl">
+          <FiPlus /> Add Supplier
+        </button>
+      </form>
 
-            <span
-              className={`inline-block mt-4 px-3 py-1 text-xs rounded-full ${
-                s.isActive
-                  ? "bg-green-100 text-green-700"
-                  : "bg-red-100 text-red-700"
-              }`}
-            >
-              {s.isActive ? "Active" : "Inactive"}
-            </span>
-          </div>
-        ))}
+      {/* Supplier Table */}
+      <div className="bg-white rounded-2xl shadow overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-100 text-gray-700">
+            <tr>
+              <th className="p-4 text-left">Name</th>
+              <th className="p-4 text-left">Company</th>
+              <th className="p-4 text-left">Phone</th>
+              <th className="p-4 text-left">Email</th>
+              <th className="p-4 text-left">License</th>
+              <th className="p-4 text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {suppliers.map((s) => (
+              <tr key={s._id} className="border-t">
+                <td className="p-4">{s.name}</td>
+                <td className="p-4">{s.company}</td>
+                <td className="p-4">{s.phone}</td>
+                <td className="p-4">{s.email || "-"}</td>
+                <td className="p-4">{s.license || "-"}</td>
+                <td className="p-4 text-center">
+                  <button
+                    onClick={() => deleteSupplier(s._id)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <FiTrash2 />
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {suppliers.length === 0 && (
+              <tr>
+                <td colSpan="6" className="p-6 text-center text-gray-500">
+                  No suppliers found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
