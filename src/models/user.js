@@ -1,0 +1,15 @@
+import mongoose from "mongoose";
+
+const UserSchema = new mongoose.Schema(
+  {
+    username: String,
+    email: { type: String, unique: true },
+    password: String,
+    role: { type: String, enum: ["ADMIN", "PHARMACIST"], default: "PHARMACIST" },
+    resetToken: String,
+    resetTokenExpiry: Date,
+  },
+  { timestamps: true }
+);
+
+export default mongoose.models.User || mongoose.model("User", UserSchema);
